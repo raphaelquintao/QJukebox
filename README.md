@@ -2,6 +2,7 @@
 
 Just another Discord music bot, but done the right way!
 
+![print](https://user-images.githubusercontent.com/2568375/130407637-5d3a05b0-c74a-4f0f-8f51-0a5fa965c715.png)
 
 
 ### Features
