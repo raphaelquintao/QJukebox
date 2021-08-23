@@ -1,0 +1,25 @@
+{
+  "name": "qjukebox",
+  "version": "1.0.0",
+  "description": "Just another Discord music bot",
+  "main": "qjukebox.js",
+  "dependencies": {
+    "@discordjs/opus": "^0.5.3",
+    "@discordjs/voice": "^0.6.0",
+    "discord-ytdl-core": "^5.0.4",
+    "discord.js": "^13.1.0",
+    "fetch": "^1.1.0",
+    "ffmpeg": "^0.0.4",
+    "fluent-ffmpeg": "^2.1.2",
+    "node-fetch": "^2.6.1",
+    "opusscript": "^0.0.8",
+    "sodium": "^3.0.2",
+    "youtube-sr": "^4.1.7",
+    "ytdl-core": "^4.9.1"
+  },
+  "scripts": {
+    "start": "node qjukebox.js"
+  },
+  "author": "Raphael Quintao <https://github.com/raphaelquintao>",
+  "license": "MIT"
+}
