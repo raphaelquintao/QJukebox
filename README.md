@@ -1,10 +1,10 @@
-#QJukebox
+# QJukebox
 
 Just another Discord music bot, but done the right way!
 
 
 
-###Features
+### Features
 * [x] Create and save playlists
 * [x] Play from Youtube
 * [x] Play from Spotify
@@ -14,7 +14,7 @@ Just another Discord music bot, but done the right way!
 * [ ] Volume normalization
 
 
-###Requirements
+### Requirements
 1. `libtool`
 2. `libsodium-dev`
 3. `ffmpeg`
@@ -23,7 +23,7 @@ Just another Discord music bot, but done the right way!
 6. YouTube API key
 7. Spotify API client id and client secret
 
-###Config
+### Config
 Rename `example.config.json` to `config.json` and put you credentials.
 
 ```json
@@ -36,14 +36,14 @@ Rename `example.config.json` to `config.json` and put you credentials.
 }
 ```
 
-###Running 
+### Running 
 
 ```
 npm install
 npm run start
 ```
 
-###Commands 
+### Commands 
 |Command|Parameter|Description|
 |---|---|---|
 |play | \<url> |Plays a song|
