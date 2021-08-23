@@ -9,7 +9,7 @@ Just another Discord music bot, but done the right way!
 * [x] Create and save playlists
 * [x] Play from Youtube
 * [x] Play from Spotify
-* [ ] Pagination of the queue (It is necessary to deal with the limit of 400 characters per message)
+* [ ] Queue Pagination (It is necessary to deal with the limit of 400 characters per message)
 * [ ] Song Lyrics
 * [ ] Blacklist for blocking songs
 * [ ] Volume normalization
