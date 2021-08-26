@@ -3,10 +3,10 @@ const QJSong = require("./QJSong.js");
 const {load_song} = require("./QJSong.js");
 const {joinVoiceChannel, createAudioResource} = require("@discordjs/voice");
 
-const playlists_path = __dirname + "/../_data/playlists";
+const data_path = __dirname + "/../_data";
 
 function load_playlist(id = '877017433884479569', filename = 'Default') {
-    let path = `${playlists_path}/${id}`;
+    let path = `${data_path}/${id}/playlists`;
     let file_path = `${path}/${filename}.json`;
     
     if (fs.existsSync(file_path)) {
@@ -23,14 +23,12 @@ function load_playlist(id = '877017433884479569', filename = 'Default') {
 }
 
 function list_playlist(id = '877017433884479569', filename = 'Default') {
-    let path = `${playlists_path}/${id}`;
+    let path = `${data_path}/${id}/playlists`;
     
     let names = [];
     if (fs.existsSync(path)) {
         fs.readdirSync(path).forEach(file => {
             let file_path = `${path}/${file}`;
-            // let stat = fs.statSync(file_path);
-            // console.log(stat);
             names.push(file.replace(/\.json/, ''));
         });
         names.sort((a, b) => {
@@ -48,10 +46,25 @@ class QJPlaylist {
     current_index = 0;
     /** @type {QJSong[]} */
     songs = [];
+    // Pagination
+    page_size = 10;
+    _current_page = 0;
     
     constructor(id = '877017433884479569', name = 'Default') {
         this.id = id;
         this.filename = name;
+    }
+    
+    get pages(){
+        return Math.ceil(this.size() / this.page_size);
+    }
+    
+    get current_page(){
+        return this._current_page;
+    }
+    
+    set current_page(page){
+        this._current_page = page < this.pages ? page : this.pages-1;
     }
     
     size() {
@@ -70,9 +83,9 @@ class QJPlaylist {
         if (!filename) filename = this.filename;
         this.filename = filename;
         
-        let json = JSON.stringify(this.songs);
+        let json = JSON.stringify(this.songs, null, 2);
         
-        let path = `${playlists_path}/${this.id}`;
+        let path = `${data_path}/${this.id}/playlists`;
         
         if (!fs.existsSync(path)) fs.mkdirSync(path);
         

@@ -69,18 +69,18 @@ class QJSong {
      * @return {Promise<void>}
      */
     async play(squeue, message, notify = true) {
-        if (!message.member.voice.channel) {
-            return message.channel.send({content: "You need to be in a vocie channel play a song!"});
-        }
+        // if (!message.member.voice.channel) {
+        //     return message.channel.send({content: "You need to be in a voice channel play a song!"});
+        // }
         if (!squeue.voice_connection) {
-            squeue.voice_connection = await joinVoiceChannel({channelId: message.member.voice.channel.id, guildId: message.guild.id, adapterCreator: message.guild.voiceAdapterCreator});
+            squeue.voice_connection = await joinVoiceChannel({channelId: squeue.voice_channel.id, guildId: squeue.guild.id, adapterCreator: squeue.guild.voiceAdapterCreator});
             squeue.voice_connection.subscribe(squeue.player);
         }
         
         squeue.player.play(createAudioResource(await this.download()));
         squeue.playlist.set_playing(this);
         
-        if (notify && squeue.notify) await squeue.text_channel.send({content: `Start Playing: **${this.title}**`});
+        if (notify && squeue.configs.notify) await squeue.text_channel.send({content: `Start Playing: **${this.title}**`});
     }
 }
 

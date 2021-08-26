@@ -4,8 +4,11 @@
   "description": "Just another Discord music bot",
   "main": "qjukebox.js",
   "dependencies": {
+    "@discordjs/builders": "^0.6.0",
     "@discordjs/opus": "^0.5.3",
+    "@discordjs/rest": "^0.1.0-canary.0",
     "@discordjs/voice": "^0.6.0",
+    "discord-api-types": "^0.22.0",
     "discord-ytdl-core": "^5.0.4",
     "discord.js": "^13.1.0",
     "fetch": "^1.1.0",

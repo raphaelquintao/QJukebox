@@ -1,4 +1,7 @@
 const Discord = require('discord.js');
+const {SlashCommandBuilder} = require('@discordjs/builders');
+// const {REST} = require('@discordjs/rest');
+const {Routes} = require('discord-api-types/v9');
 const {joinVoiceChannel, createAudioPlayer, AudioResource, createAudioResource, generateDependencyReport, AudioPlayerStatus, AudioPlayerPausedState} = require("@discordjs/voice");
 const ytdl = require('ytdl-core');
 const qyoutube = require("./core/qyoutube.js");
@@ -6,8 +9,11 @@ const qspotify = require("./core/qspotify.js");
 const QJQueue = require("./core/QJQueue.js");
 const {QJPlaylist, load_playlist, list_playlist} = require("./core/QJPlaylist.js");
 const QJSong = require("./core/QJSong.js");
+const {qprint} = require("./core/QUtils.js");
+const {REST} = require("@discordjs/rest");
 
-const {prefix, discord_token} = require('./config.json');
+
+const {text_channel, voice_channel, prefix, discord_client_id, discord_token} = require('./config.json');
 
 const VERSION = '1.0';
 
@@ -16,28 +22,14 @@ const client = new Discord.Client({
         Discord.Intents.FLAGS.GUILDS,
         Discord.Intents.FLAGS.GUILD_MESSAGES,
         Discord.Intents.FLAGS.DIRECT_MESSAGES,
-        Discord.Intents.FLAGS.GUILD_VOICE_STATES
+        Discord.Intents.FLAGS.GUILD_VOICE_STATES,
+        Discord.Intents.FLAGS.GUILD_INTEGRATIONS
     ]
 });
 
 const queue = new Map();
-const queue_messages = [];
 
-
-client.once("ready", (ev) => {
-    console.log("Ready!");
-    console.log(generateDependencyReport());
-});
-
-client.once("reconnecting", () => {
-    console.log("Reconnecting!");
-});
-
-client.once("disconnect", () => {
-    console.log("Disconnect!");
-});
-
-const cmds = [
+const cmds2 = [
     {name: 'about', description: 'Show about message'},
     {name: 'help', description: 'Show help message'},
     {name: 'ping', description: 'Do a ping test.'},
@@ -72,7 +64,101 @@ const cmds = [
         description: 'Delete a playlist',
         options: [{name: 'playlist_name', type: 'STRING', description: 'The name of the playlist to delete', required: true}]
     }
-]
+];
+
+let cmds = [
+    new SlashCommandBuilder().setName('about').setDescription('Show about message'),
+    new SlashCommandBuilder().setName('play').setDescription('Add a song to the current queue and start playing')
+        .addStringOption(option => option.setName('song').setDescription('A link for a song').setRequired(false)),
+    new SlashCommandBuilder().setName('stop').setDescription('Stops the music'),
+    new SlashCommandBuilder().setName('pause').setDescription('Pauses the player'),
+    new SlashCommandBuilder().setName('unpause').setDescription('Unpauses the player'),
+    new SlashCommandBuilder().setName('skip').setDescription('Skip to the next song'),
+    new SlashCommandBuilder().setName('shuffle').setDescription('Shuffle the queue'),
+    new SlashCommandBuilder().setName('loop').setDescription('Queue loop')
+        .addStringOption(option => option.setName('mode').setDescription('The new looping mode').setRequired(true)
+            .addChoice('Enabled', 'enabled').addChoice('Disabled', 'disabled')),
+    new SlashCommandBuilder().setName('clear').setDescription('Clears the queue'),
+    new SlashCommandBuilder().setName('queue').setDescription('Display the current queue and controls'),
+    new SlashCommandBuilder().setName('remove').setDescription('Remove the specified song from current queue')
+        .addIntegerOption(option => option.setName('index').setDescription('The position of the song you want to remove').setRequired(true)),
+    new SlashCommandBuilder().setName('jump').setDescription('Jump to specified song in the current queue')
+        .addIntegerOption(option => option.setName('index').setDescription('The position of the song you want to jump to').setRequired(true)),
+    new SlashCommandBuilder().setName('notify').setDescription('Toggles whether QJukebox will announce when a new song start playing')
+        .addStringOption(option => option.setName('mode').setDescription('The new notify mode').setRequired(true)
+            .addChoice('Enabled', 'enabled').addChoice('Disabled', 'disabled')),
+
+];
+
+
+function register_commands(guildId) {
+    const rest = new REST({version: '9'}).setToken(discord_token);
+    (async () => {
+        try {
+            console.log('Started refreshing application (/) commands.');
+            
+            await rest.put(
+                Routes.applicationGuildCommands(discord_client_id, guildId),
+                {body: cmds},
+            );
+            
+            console.log('Successfully reloaded application (/) commands.');
+        } catch (error) {
+            console.error(error);
+        }
+    })();
+}
+
+client.once("ready", async (ev) => {
+    qprint('-> Ready!', 'lgreen', true);
+    // console.log(generateDependencyReport());
+    
+    for (const g of client.guilds.cache) {
+        let guild = g[1];
+        // if (guild.id !== '877017433884479569') continue;
+        if (guild.id === '485942602814717973') continue;
+        let squeue = queue.get(guild.id);
+        
+        register_commands(guild.id);
+        
+        let _text_channel = guild.channels.cache.find(channel => channel.name.toLowerCase() === text_channel.toLowerCase() && channel.type === "GUILD_TEXT");
+        let _voice_channel = guild.channels.cache.find(channel => channel.name.toLowerCase() === voice_channel.toLowerCase() && channel.type === "GUILD_VOICE");
+        
+        if (_text_channel)
+            _text_channel.messages.fetch().then(async messages => {
+                // console.log(messages);
+                
+                messages.forEach(message => {
+                    message.delete();
+                    // if (message.author.bot === true && message.author.username === 'QJukebox') {
+                    //     message.delete();
+                    // }
+                });
+                
+            });
+        
+        if (!squeue) {
+            qprint('-> Creating server queue for: ', '', false, '');
+            qprint(`${guild.name} `, 'blue', false, '');
+            qprint(guild.id, '', false);
+            
+            squeue = new QJQueue(guild, _text_channel, _voice_channel);
+            await squeue.bind_events();
+            queue.set(guild.id, squeue);
+        }
+    }
+    
+    
+});
+
+client.once("reconnecting", () => {
+    console.log("Reconnecting!");
+});
+
+client.once("disconnect", () => {
+    console.log("Disconnect!");
+});
+
 
 
 
@@ -80,67 +166,76 @@ const cmds = [
 let commands = ['ping', 'play', 'stop', 'pause', 'unpause', 'skip', 'queue', 'shuffle', 'remove', 'clear', 'jump', 'playlist', 'help', 'about'];
 
 client.on("messageCreate", async message => {
-    // if (message.author.bot) return;
-    // console.log(message);
-    
-    
-    
     if (!message.content.startsWith(prefix)) return;
-    
-    let squeue = queue.get(message.guild.id);
     
     console.log(message.content);
     
-    // const re = new RegExp(`^${prefix}(${commands.join('|')})(.*)`, 'i');
-    let tmp = `^${prefix}\\b\(${commands.join('|')}\)\\b(.*)`;
-    const re = new RegExp(`^${prefix}\\b\(${commands.join('|')}\)\\b(\\s[^\\s]+)?(\\s.*)?`, 'i');
+    const re = new RegExp(`^${prefix}\\b\(?<cmd>${commands.join('|')}\)\\b(?:\\s(?<p1>[^\\s]+))?(?:\\s(?<p2>.+))?`, 'i');
     console.log(re);
     let match = message.content.match(re);
     console.log(match);
     // return;
     if (!match) return;
-    let cmd = match[1].toLowerCase();
-    let param = match[2] ? match[2].trim() : '';
-    let param2 = match[3] ? match[3].trim() : '';
+    let {cmd, p1, p2} = match.groups;
+    cmd = cmd.toLowerCase();
     
-    console.log(cmd, param);
+    
+    // console.log(cmd, p1);
     console.log(message.guild.id);
     
+    // Create Default Channels
+    let _text_channel = message.guild.channels.cache.find(channel => channel.name.toLowerCase() === text_channel.toLowerCase() && channel.type === "GUILD_TEXT");
+    let _voice_channel = message.guild.channels.cache.find(channel => channel.name.toLowerCase() === voice_channel.toLowerCase() && channel.type === "GUILD_VOICE");
     
-    // if (!message.member.voice.channel) {
-    //     message.channel.send({content: "You need to be in a vocie channel to send commands!"});
-    // }
+    if (!_text_channel) _text_channel = await message.guild.channels.create(text_channel, {type: "GUILD_TEXT"});
+    if (!_voice_channel) _voice_channel = await message.guild.channels.create(voice_channel, {type: "GUILD_VOICE"});
     
+    
+    // Only allow command for specific channel
+    if (message.channel.name.toLowerCase() !== text_channel.toLowerCase()) {
+        return;
+    }
+    
+    // Creating Queue
+    let squeue = queue.get(message.guild.id);
     if (!squeue) {
         console.log('Creating Server Queue!');
-        const _queue = new QJQueue(message);
-        await _queue.bind_events(message, async (a) => {
-            _queue.messages_update(await show_queue(message, false));
-        });
-        queue.set(message.guild.id, _queue);
+        squeue = new QJQueue(message.guild, _text_channel, _voice_channel);
+        await squeue.bind_events();
+        queue.set(message.guild.id, squeue);
     }
+    if (!squeue.text_channel) squeue.text_channel = _text_channel;
+    if (!squeue.voice_channel) squeue.voice_channel = _voice_channel;
+    if (!squeue.on_next_song) {
+        squeue.on_next_song = async (a) => {
+            squeue.qmessages_update(await show_queue(message, false));
+        }
+    }
+    
+    
+    // Handling Commands
     if (cmd === 'ping') {
-        await message.guild.commands.set(cmds);
-        await message.reply('Deployed!');
-        // return message.channel.send({content: "Pong"});
+        // await message.guild.commands.set(cmds);
+        // await message.reply('Deployed!');
+        return squeue.text_channel.send({content: "Pong"});
     } else if (cmd === 'play') {
-        return play_handler(message, param);
+        return play_handler(message, p1);
     } else if (cmd === 'stop') {
         return stop(message);
     } else if (cmd === 'shuffle') {
         return shuffle(message);
     } else if (cmd === 'remove') {
-        return remove(message, param);
+        return remove(message, p1);
     } else if (cmd === 'clear') {
-        return clear(message, param);
+        return clear(message, p1);
     } else if (cmd === 'pause') {
         return pause(message);
     } else if (cmd === 'jump') {
-        return jump(message, param);
+        return jump(message, p1);
     } else if (cmd === 'playlist') {
-        return await playlist(message, param, param2);
+        return await playlist(message, p1, p2);
     } else if (cmd === 'queue') {
-        return show_queue(message, squeue);
+        return show_queue(message, true);
     } else if (cmd === 'skip') {
         return skip(message);
     } else if (cmd === 'about') {
@@ -167,16 +262,19 @@ async function play_handler(message, param) {
     
     if (param !== '') {
         let songs = await get_songs(param, message.member.displayName).catch(reason => false);
-        if (!songs) return message.channel.send({content: "Invalid URL"});
+        if (!songs) return text_channel.send({content: "Invalid URL"});
         squeue.playlist.add(songs);
-        message.channel.send({content: `${songs.length} new songs has been added to the queue!`});
+        squeue.text_channel.send({content: `${songs.length} new songs has been added to the queue!`});
         
         if (!squeue.playing) {
             let song = squeue.playlist.get(0);
             if (song) await song.play(squeue, message);
         }
+        
+        squeue.qmessages_update(await show_queue(message, false));
+        
     } else {
-        unpause(message);
+        await unpause(message);
     }
 }
 
@@ -202,7 +300,7 @@ async function remove(message, param) {
         squeue.playlist.set_playing(curr);
     }
     
-    squeue.messages_update(await show_queue(message, false));
+    squeue.qmessages_update(await show_queue(message, false));
     
     await squeue.text_channel.send({content: `The song **${removed.title}** has been remove!`});
 }
@@ -213,7 +311,7 @@ async function clear(message) {
     squeue.playlist.clear();
     squeue.player.stop();
     
-    squeue.messages_update(await show_queue(message, false));
+    squeue.qmessages_update(await show_queue(message, false));
     
     await squeue.text_channel.send({content: `The playlist has been cleared!`});
 }
@@ -221,7 +319,7 @@ async function clear(message) {
 async function shuffle(message, notify = true) {
     let squeue = queue.get(message.guild.id);
     squeue.playlist.shuffle();
-    squeue.messages_update(await show_queue(message, false));
+    squeue.qmessages_update(await show_queue(message, false));
     
     if (notify) squeue.text_channel.send({content: `Playlist has been shuffled!`});
 }
@@ -232,7 +330,7 @@ async function prev(message, notify) {
     if (!song) return false;
     if (song) {
         await song.play(squeue, message, notify);
-        squeue.messages_update(await show_queue(message, false));
+        squeue.qmessages_update(await show_queue(message, false));
     }
 }
 
@@ -242,7 +340,7 @@ async function next(message, notify) {
     if (!song) return false;
     if (song) {
         await song.play(squeue, message, notify);
-        squeue.messages_update(await show_queue(message, false));
+        squeue.qmessages_update(await show_queue(message, false));
     }
 }
 
@@ -253,7 +351,7 @@ async function jump(message, index) {
     if (!song) return squeue.text_channel.send({content: `Invalid song ID: ${index}`});
     if (song) {
         await song.play(squeue, message);
-        squeue.messages_update(await show_queue(message, false));
+        squeue.qmessages_update(await show_queue(message, false));
     }
 }
 
@@ -266,7 +364,7 @@ async function skip(message) {
     let next_song = squeue.playlist.get_next();
     if (next_song) {
         await next_song.play(squeue, message);
-        squeue.messages_update(await show_queue(message, false));
+        squeue.qmessages_update(await show_queue(message, false));
     }
 }
 
@@ -277,17 +375,17 @@ async function stop(message) {
     if (!squeue) return squeue.text_channel.send("There is no song that I could stop!");
     
     squeue.player.pause();
-    squeue.messages_update(await show_queue(message, false));
+    squeue.qmessages_update(await show_queue(message, false));
 }
 
 async function pause(message) {
     let squeue = queue.get(message.guild.id);
     if (!message.member.voice.channel) return squeue.text_channel.send({content: "You have to be in a voice channel to stop the music!"});
     
-    if (!squeue) return message.channel.send("There is no song that I could stop!");
+    if (!squeue) return text_channel.send("There is no song that I could stop!");
     
     squeue.player.pause();
-    squeue.messages_update(await show_queue(message, false));
+    squeue.qmessages_update(await show_queue(message, false));
 }
 
 async function unpause(message) {
@@ -302,9 +400,9 @@ async function unpause(message) {
             return;
         }
         let song = squeue.playlist.get_current();
-        if (song) song.play(squeue, message);
+        if (song) await song.play(squeue, message);
         else return squeue.text_channel.send({content: "There's no songs on queue to play!"});
-        squeue.messages_update(await show_queue(message, false));
+        squeue.qmessages_update(await show_queue(message, false));
     }
 }
 
@@ -313,31 +411,13 @@ async function playlist(message, action, action2) {
     let playlists_names = list_playlist(message.guild.id);
     
     if (action === '') {
-        let msg = '';
-        let options = [];
-        for (const key in playlists_names) {
-            let playlist_name = playlists_names[key];
-            let index = ("0000" + (parseInt(key))).substr(-3);
-            let playlist = load_playlist(message.guild.id, playlist_name);
-            
-            options.push({label: playlist_name, value: index});
-            msg += `\`${index}\` - ${playlist_name} - ${playlist.size()} Songs\n`;
-            
-        }
-        const embed = new Discord.MessageEmbed();
-        embed.title = 'QJukebox - Playlists';
-        // embed.setDescription(msg);
-        const row = new Discord.MessageActionRow();
-        let playlist_select = new Discord.MessageSelectMenu({customId: 'playlist_select', placeholder: 'Select a playlist to load'});
-        playlist_select.addOptions(options)
-        row.addComponents(playlist_select);
-        
-        return squeue.text_channel.send({content: '**Playlists:**', components: [row]});
+        await show_queue(message, true);
         
     } else if (action === 'save') {
-        
         squeue.playlist.save(action2);
-        return message.channel.send({content: `PLaylist **${action2}** saved!`});
+        squeue.qmessages_update(await show_queue(message, false));
+        return squeue.text_channel.send({content: `Playlist **${action2}** saved!`});
+        
     } else {
         let index = parseInt(action);
         if (isNaN(index)) return;
@@ -346,33 +426,92 @@ async function playlist(message, action, action2) {
         console.log(playlist_name);
         let playlist = load_playlist(message.guild.id, playlist_name);
         let squeue = queue.get(message.guild.id);
+        squeue.configs.playlist_selected = index;
         squeue.playlist = playlist;
         
         let song = squeue.playlist.get(0);
         await song.play(squeue, message);
         // console.log()
         
-        squeue.messages_update(await show_queue(message, false));
+        squeue.qmessages_update(await show_queue(message, false));
     }
     
 }
 
+async function playlist_show(message, send = true) {
+    let squeue = queue.get(message.guild.id);
+    let playlists_names = list_playlist(message.guild.id);
+    
+    let msg = '';
+    let options = [];
+    let playlists = [];
+    for (const key in playlists_names) {
+        let playlist_name = playlists_names[key];
+        let index = ("0000" + (parseInt(key))).substr(-3);
+        let playlist = load_playlist(message.guild.id, playlist_name);
+        playlists.push(playlist);
+        
+        options.push({label: playlist_name, description: `${playlist.size()} Songs\n`, value: index});
+        msg += `\`${index}\` - ${playlist_name} - ${playlist.size()} Songs\n`;
+        
+    }
+    const embed = new Discord.MessageEmbed();
+    embed.title = 'QJukebox - Playlists';
+    // embed.setDescription(msg);
+    const row = new Discord.MessageActionRow();
+    let playlist_select = new Discord.MessageSelectMenu({customId: 'playlist_select', placeholder: 'Select a playlist to load'});
+    
+    if (squeue.configs.playlist_selected > -1) {
+        let selected = playlists[squeue.configs.playlist_selected];
+        playlist_select.setPlaceholder(selected.name);
+    }
+    console.log('OK:', options.length);
+    if (options.length === 0) {
+        options.push({label: "No playlists", description: '', value: '0'});
+        playlist_select.setPlaceholder('No playlist');
+        playlist_select.setDisabled(true);
+    }
+    
+    playlist_select.addOptions(options);
+    
+    
+    
+    row.addComponents(playlist_select);
+    
+    
+    let data = {content: '**Playlists:**', components: [row]};
+    
+    if (send) {
+        let last_message = squeue.text_channel.send(data);
+        squeue.pmessages_add(last_message);
+        return;
+    }
+    
+    return data;
+}
+
 async function show_queue(message, send = true) {
     let squeue = queue.get(message.guild.id);
-    
-    if (!squeue) {
-        return message.channel.send({content: "There is no song on queue!"});
-    }
+    if (!squeue) return text_channel.send({content: "There is no song on queue!"});
     
     
     let playlist = squeue.playlist;
     let current = playlist.current_index;
     
     
+    let size = playlist.size();
+    let page = playlist.current_page;
+    let page_size = playlist.page_size;
+    
+    let pages = playlist.pages;
+    
+    let c = `${size}`.length;
+    
     let msg = '';
     
-    for (let key = 0; key < playlist.size(); key++) {
-        let index = ("0000" + (key)).substr(-3);
+    for (let key = page * page_size; key < (page + 1) * page_size; key++) {
+        if (key >= size) break;
+        let index = ("0000" + (key)).substr(-c);
         let tmp_msg = `\`${index}\` - ${playlist.get(key).get_str()}\n`;
         if (key === current) {
             msg += `⬐\n`;
@@ -383,43 +522,55 @@ async function show_queue(message, send = true) {
         }
     }
     if (msg === '') msg = 'Queue is empty!';
+    else if (current < page * page_size) {
+        let s = playlist.get(current);
+        msg = `⬐\n\`${("0000" + (current)).substr(-c)}\` - ${s.title}\n⬑\n...\n` + msg;
+    } else if (current > (page + 1) * page_size) {
+        let s = playlist.get(current);
+        msg += `...\n⬐\n\`${("0000" + (current)).substr(-c)}\` - ${s.title}\n⬑\n`;
+    }
     
-    const row = new Discord.MessageActionRow()
-    let btn_update = new Discord.MessageButton({customId: 'update', label: 'update', style: 'SECONDARY'});
+    
+    // Pagination
+    const pagination = new Discord.MessageActionRow();
+    let btn_page_back = new Discord.MessageButton({customId: 'page_back', label: 'back', style: 'SECONDARY'});
+    btn_page_back.setDisabled(page === 0 || pages === 1);
+    let btn_page_next = new Discord.MessageButton({customId: 'page_next', label: 'forward', style: 'SECONDARY'});
+    btn_page_next.setDisabled(page === pages - 1 || pages === 1);
+    
+    pagination.addComponents([btn_page_back, btn_page_next]);
+    
+    //Controls
+    const controls = new Discord.MessageActionRow();
     let btn_shuffle = new Discord.MessageButton({customId: 'shuffle', label: 'shuffle', style: 'SECONDARY'});
     let btn_prev = new Discord.MessageButton({customId: 'prev', label: 'Previous Song', style: 'SECONDARY', disabled: !squeue.playlist.get_prev()});
     let btn_next = new Discord.MessageButton({customId: 'next', label: 'Next Song', style: 'SECONDARY', disabled: !squeue.playlist.get_next()});
     
     let btn_play_pause = new Discord.MessageButton({customId: 'play_pause', style: 'SECONDARY'});
-    
     btn_play_pause.setDisabled(squeue.playlist.size() === 0);
-    if (squeue.playing) {
-        btn_play_pause.setLabel('Pause');
-    } else {
-        btn_play_pause.setLabel('Play');
-    }
+    btn_play_pause.setLabel(squeue.playing ? 'Pause' : 'Play');
     
-    // row.addComponents(btn_update);
-    row.addComponents(btn_shuffle);
-    row.addComponents(btn_prev);
-    row.addComponents(btn_play_pause);
-    row.addComponents(btn_next);
+    controls.addComponents([btn_shuffle, btn_prev, btn_play_pause, btn_next]);
     
+    // Playlists
+    let playlist_row = (await playlist_show(message, false)).components[0];
     
     const embed = new Discord.MessageEmbed();
     embed.setColor('#8c223e');
     embed.setTitle('QJukebox - Playlist: ' + playlist.name);
     // embed.setAuthor('Quintao');
-    // embed.setFooter(row);
+    embed.setFooter(squeue.configs.loop ? `Loop: Enabled` : `Loop: Disabled`);
     embed.setDescription(msg);
     
+    let data = {embeds: [embed], components: [pagination, controls, playlist_row]};
+    
     if (send) {
-        let last_message = await squeue.text_channel.send({embeds: [embed], components: [row]});
-        squeue.messages_add(last_message);
+        let last_message = await squeue.text_channel.send(data);
+        squeue.qmessages_add(last_message);
         return;
     }
     
-    return {embeds: [embed], components: [row]};
+    return data;
 }
 
 client.on('interactionCreate', async interaction => {
@@ -427,6 +578,10 @@ client.on('interactionCreate', async interaction => {
     if (interaction.isButton()) {
         if (interaction.customId === 'update') {
             // interaction.update(await show_queue(interaction.message, false));
+        } else if (interaction.customId === 'page_back') {
+            squeue.playlist.current_page--;
+        } else if (interaction.customId === 'page_next') {
+            squeue.playlist.current_page++;
         } else if (interaction.customId === 'play_pause') {
             if (squeue.playing) {
                 await pause(interaction);
@@ -437,21 +592,21 @@ client.on('interactionCreate', async interaction => {
             await shuffle(interaction, false);
         } else if (interaction.customId === 'prev') {
             await prev(interaction, false);
-            // interaction.update(await show_queue(interaction.message, false));
         } else if (interaction.customId === 'next') {
             await next(interaction, false);
-            // interaction.update(await show_queue(interaction.message, false));
         }
-        interaction.update(await show_queue(interaction.message, false));
-    }else if (interaction.isSelectMenu()){
+        interaction.update({});
+        // interaction.update(await show_queue(interaction.message, false));
+    } else if (interaction.isSelectMenu()) {
         if (interaction.customId === 'playlist_select') {
             let index = parseInt(interaction.values[0]);
             console.log(interaction.values[0]);
-            playlist(interaction.message, index);
-            await interaction.update({});
+            await playlist(interaction.message, index);
+            // await interaction.update(await playlist_show(interaction.message, false));
+            interaction.update({});
         }
     }
-    squeue.messages_update(await show_queue(interaction.message, false));
+    squeue.qmessages_update(await show_queue(interaction.message, false));
     
     // console.log(interaction);
 });
