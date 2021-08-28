@@ -1,26 +1,27 @@
 // Utils
 
-function qprint(args, color = '', b = false, n = '\n') {
-    const RESET = '\033[0m'
-    const BOLD = '\033[1m'
-    const UNDERLINE = '\033[4m'
-    const colors = {
-        'black': '\033[30m',
-        'red': '\033[31m',
-        'green': '\033[32m',
-        'yellow': '\033[33m',
-        'blue': '\033[34m',
-        'magenta': '\033[35m',
-        'cyan': '\033[36m',
-        'lgray': '\033[37m',
-        'dgray': '\033[90m',
-        'lred': '\033[91m',
-        'lgreen': '\033[92m',
-        'lyellow': '\033[93m',
-        'lblue': '\033[94m',
-        'lmagenta': '\033[95m',
-        'lcyan': '\033[97m',
-        'white': '\033[97m',
+export function qprint(args, color = '', b = false, n = '\n') {
+    const RESET = '\u001b[0m';
+    const BOLD = '\u001b[1m';
+    const UNDERLINE = '\u001b[4m';
+    
+    let colors = {
+        'black': '\u001b[30m',
+        'red': '\u001b[31m',
+        'green': '\u001b[32m',
+        'yellow': "\u001b[33m",
+        'blue': '\u001b[34m',
+        'magenta': '\u001b[35m',
+        'cyan': '\u001b[36m',
+        'lgray': '\u001b[37m',
+        'dgray': '\u001b[90m',
+        'lred': '\u001b[91m',
+        'lgreen': '\u001b[92m',
+        'lyellow': "\u001b[93m",
+        'lblue': '\u001b[94m',
+        'lmagenta': '\u001b[95m',
+        'lcyan': '\u001b[97m',
+        'white': '\u001b[97m',
     }
     
     color = color !== '' ? colors[color] : color;
@@ -31,4 +32,4 @@ function qprint(args, color = '', b = false, n = '\n') {
 
 
 
-module.exports = {qprint};
+// module.exports = {qprint};

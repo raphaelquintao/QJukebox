@@ -1,28 +1,30 @@
-// const ytdl = require('ytdl-core');
-const ytdl = require('discord-ytdl-core');
-const Youtube = require('youtube-sr').default;
-const Discord = require("discord.js");
-const {AudioPlayer, createAudioResource, joinVoiceChannel} = require("@discordjs/voice");
+import ytdl from "ytdl-core";
+import ytdld from "discord-ytdl-core";
+import { YouTube } from "youtube-sr";
+
+import { createAudioResource, joinVoiceChannel } from "@discordjs/voice";
+
 
 async function search_on_youtube(title, artist) {
-    let video = await Youtube.searchOne(`${title} ${artist}`).catch(err => false);
-    if (!video) video = await Youtube.searchOne(`${artist} ${title}`).catch(err => false);
-    if (!video) video = await Youtube.searchOne(`${title}`).catch(err => false);
+    let video = await YouTube.searchOne(`${title} ${artist}`, 'video').catch(err => false);
+    if (!video) video = await YouTube.searchOne(`${artist} ${title}`, 'video').catch(err => false);
+    if (!video) video = await YouTube.searchOne(`${title}`, 'video').catch(err => false);
     
     return video;
 }
 
-function load_song(data) {
+export function load_song(data) {
     return new QJSong(data.title, data.artist, data.url, data.duration, data.added_by, data.source);
 }
 
-class QJSong {
+export default class QJSong {
     title;
     artist;
     url;
     duration;
     added_by;
     source;
+    fails;
     
     
     constructor(title, artist, url, duration, added_by, source) {
@@ -32,11 +34,13 @@ class QJSong {
         this.duration = duration;
         this.added_by = added_by;
         this.source = source;
+        this.fails = 0;
     }
     
     
     get_duration_str() {
         let duration = parseInt(this.duration);
+        if (duration === 0) return "\u221E";
         let min = Math.trunc(duration / 60);
         let sec = ((duration - min * 60) + "0").substring(0, 2);
         return `${min}:${sec}`;
@@ -44,11 +48,19 @@ class QJSong {
     
     
     get_str() {
+        let title = `${this.title}`;
+        
         if (this.artist) {
-            let tmp = `${this.title.slice(0, 40)} - ${this.artist}`;
-            return `${tmp.slice(0, 70)} - ${this.get_duration_str()}`;
+            title = title.slice(0, 40);
+            if (this.fails > 0) title = `~~${title}~~`;
+            title = `${title} - ${this.artist}`.slice(0, 70);
+        } else {
+            title = title.slice(0, 70);
+            if (this.fails > 0) title = `~~${title}~~`;
         }
-        return `${this.title.slice(0, 70)} - ${this.get_duration_str()}`;
+        
+        
+        return `${title} - ${this.get_duration_str()}`;
     }
     
     
@@ -57,8 +69,11 @@ class QJSong {
             let video = await search_on_youtube(this.title, this.artist);
             this.url = video.url;
         }
-        // return ytdl(this.url, {filter: "audioonly"});
-        return ytdl(this.url, {filter: "audioonly", opusEncoded: true});
+        
+        // return ytdl(this.url);
+        return ytdl(this.url, {filter: 'audioonly'});
+        // return ytdl(this.url, {filter: format => format.container === 'mp4' && format.audioQuality === 'AUDIO_QUALITY_MEDIUM'});
+        // return ytdld(this.url, {filter: "audioonly", opusEncoded: false});
     }
     
     /**
@@ -69,20 +84,23 @@ class QJSong {
      * @return {Promise<void>}
      */
     async play(squeue, message, notify = true) {
-        // if (!message.member.voice.channel) {
-        //     return message.channel.send({content: "You need to be in a voice channel play a song!"});
-        // }
+        squeue.playlist.set_playing(this);
+        
+        if(squeue.stoped) return;
+        
         if (!squeue.voice_connection) {
             squeue.voice_connection = await joinVoiceChannel({channelId: squeue.voice_channel.id, guildId: squeue.guild.id, adapterCreator: squeue.guild.voiceAdapterCreator});
             squeue.voice_connection.subscribe(squeue.player);
         }
         
-        squeue.player.play(createAudioResource(await this.download()));
-        squeue.playlist.set_playing(this);
+        let audio = createAudioResource(await this.download(), {inlineVolume: true});
+        audio.volume.setVolume(1);
+        squeue.audio = audio;
+        squeue.player.play(audio);
         
-        if (notify && squeue.configs.notify) await squeue.text_channel.send({content: `Start Playing: **${this.title}**`});
+        if (notify && squeue.configs.notify) await squeue.text_channel.send({content: `Start Playing: "${this.title}"`});
     }
 }
 
-module.exports = QJSong;
-module.exports.load_song = load_song;
+// module.exports = QJSong;
+// module.exports.load_song = load_song;

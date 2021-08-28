@@ -1,26 +1,33 @@
-const fs = require("fs");
+import fs from "fs";
+import { dirname } from 'path';
+import { fileURLToPath } from 'url';
 
 
+const __dirname = dirname(fileURLToPath(import.meta.url));
 const data_path = __dirname + "/../_data";
 
 
-class QJConfig {
+export default class QJConfig {
     id;
-    // _default_playlist = 0;
+    name;
     playlist_selected = -1;
+    _debug = true;
     _notify = true;
     _loop = false;
     
-    constructor(id) {
+    constructor(id, name) {
         this.id = id;
         this.load();
+        this.name = name;
+        this.save();
     }
     
     // -- Gets --
-    // get default_playlist() {
-    //     this.load();
-    //     return this._default_playlist;
-    // }
+
+    get debug() {
+        this.load();
+        return this._debug;
+    }
     
     get notify() {
         this.load();
@@ -33,10 +40,11 @@ class QJConfig {
     }
     
     // -- Sets --
-    // set default_playlist(default_playlist) {
-    //     this._default_playlist = default_playlist;
-    //     this.save();
-    // }
+    
+    set debug(debug) {
+        this._debug = debug;
+        this.save();
+    }
     
     set notify(notify) {
         this._notify = notify;
@@ -81,4 +89,4 @@ class QJConfig {
 }
 
 
-module.exports = QJConfig;
+// module.exports = QJConfig;

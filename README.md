@@ -29,7 +29,9 @@ Rename `example.config.json` to `config.json` and put you credentials.
 
 ```json
 {
-  "prefix": "!",
+  "text_channel" : "\uD83C\uDF99・Jukebox",
+  "voice_channel" : "\uD83D\uDCFB・Jukebox",
+  "discord_client_id": "",
   "discord_token": "",
   "youtube_api_key": "",
   "spotify_client_id" : "",

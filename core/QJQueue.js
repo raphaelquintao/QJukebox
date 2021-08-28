@@ -1,25 +1,26 @@
-const Discord = require('discord.js');
-const {joinVoiceChannel, createAudioPlayer, AudioResource, AudioPlayer, createAudioResource, generateDependencyReport, AudioPlayerStatus} = require("@discordjs/voice");
-const {QJPlaylist} = require("./QJPlaylist.js");
-const QJConfig = require("./QJConfig.js");
+import { AudioPlayer, AudioPlayerStatus, AudioResource, createAudioPlayer } from "@discordjs/voice";
+import QJConfig from "./QJConfig.js";
+import QJPlaylist from "./QJPlaylist.js";
 
-class QJQueue {
+
+export default class QJQueue {
     /** @type {Discord.Guild} */
     guild = null;
     text_channel = null;
     voice_channel = null;
     voice_connection = null;
+    /** @type {AudioResource} */
+    audio;
     /** @type {AudioPlayer} */
     player;
     /** @type {QJPlaylist} */
     playlist;
     qmessages;
     pmessages;
-    on_next_song;
+    on_next_song = null;
     /** @type {QJConfig} */
     configs;
-    retries = 3;
-    _tries = 0;
+    stoped = false;
     
     
     constructor(guild, text_channel, voice_channel) {
@@ -30,7 +31,7 @@ class QJQueue {
         this.playlist = new QJPlaylist(`${guild.id}`);
         this.qmessages = []
         this.pmessages = []
-        this.configs = new QJConfig(`${guild.id}`);
+        this.configs = new QJConfig(`${guild.id}`, guild.name);
     }
     
     async bind_events() {
@@ -40,23 +41,19 @@ class QJQueue {
         });
         this.player.on(AudioPlayerStatus.Idle, async (oldState, newState) => {
             console.log('Idle');
-            let next_song;
-            if (this._tries === 0) {
-                next_song = this.playlist.get_next();
-            } else {
-                next_song = this.playlist.get_current();
-                if (this._tries >= this.retries) this._tries = 0;
-            }
+            
+            if (this.stoped) return;
+            
+            let next_song = this.playlist.get_next();
             
             if (next_song) {
                 await next_song.play(this);
-                if(this.on_next_song) await this.on_next_song;
-                this._tries = 0;
+                if (this.on_next_song) await this.on_next_song();
             } else if (this.configs.loop) {
                 let song = this.playlist.get(0);
                 if (song) {
                     await song.play(this);
-                    if(this.on_next_song) await this.on_next_song;
+                    if (this.on_next_song) await this.on_next_song();
                 }
             }
         });
@@ -68,8 +65,9 @@ class QJQueue {
         });
         this.player.on('error', error => {
             let song = this.playlist.get_current();
-            this._tries++;
-            this.text_channel.send({content: `Failed to load song: ${song.title}\nTries: ${this.tries}`});
+            song.fails++;
+            if (this.configs.debug)
+                this.text_channel.send({content: `Failed to load song: ${song.title}`});
         });
     }
     
@@ -81,10 +79,20 @@ class QJQueue {
         this.qmessages.push(message);
     }
     
-    qmessages_update(data) {
-        for (const qmessage of this.qmessages) {
-            qmessage.edit(data);
+    async qmessages_update(data) {
+        for (let i = this.qmessages.length - 1, c = 0; i >= 0, c < 5; i--, c++) {
+            // if (this.qmessages.length - 1 < c) break;
+            let qmessage = this.qmessages[i];
+            if (!qmessage) break;
+            await qmessage.edit(data).catch(reason => {
+                console.log('Failed to edit');
+                // this.qmessages.splice(i);
+            });
         }
+    }
+    
+    qmessage_find_by_id(id) {
+        return this.qmessages.find(value => value.id === id);
     }
     
     pmessages_add(message) {
@@ -98,4 +106,3 @@ class QJQueue {
     }
 }
 
-module.exports = QJQueue;

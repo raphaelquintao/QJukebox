@@ -1,19 +1,22 @@
-const fs = require("fs");
-const QJSong = require("./QJSong.js");
-const {load_song} = require("./QJSong.js");
-const {joinVoiceChannel, createAudioResource} = require("@discordjs/voice");
+import fs from "fs";
+import { dirname } from 'path';
+import { fileURLToPath } from 'url';
+import { load_song } from "./QJSong.js";
 
+// import { createAudioResource, joinVoiceChannel } from "@discordjs/voice";
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
 const data_path = __dirname + "/../_data";
 
-function load_playlist(id = '877017433884479569', filename = 'Default') {
+export function load_playlist(id = '877017433884479569', name = 'Default') {
     let path = `${data_path}/${id}/playlists`;
-    let file_path = `${path}/${filename}.json`;
+    let file_path = `${path}/${name}.json`;
     
     if (fs.existsSync(file_path)) {
         let data = fs.readFileSync(file_path);
         let json = JSON.parse(data);
         let playlist = new QJPlaylist(id);
-        playlist.name = filename;
+        playlist.name = name;
         for (const song_data of json) {
             playlist.add(load_song(song_data));
         }
@@ -22,7 +25,7 @@ function load_playlist(id = '877017433884479569', filename = 'Default') {
     return false;
 }
 
-function list_playlist(id = '877017433884479569', filename = 'Default') {
+export function list_playlist(id = '877017433884479569') {
     let path = `${data_path}/${id}/playlists`;
     
     let names = [];
@@ -38,7 +41,19 @@ function list_playlist(id = '877017433884479569', filename = 'Default') {
     return names;
 }
 
-class QJPlaylist {
+export function delete_playlist(id, name) {
+    let path = `${data_path}/${id}/playlists`;
+    let file_path = `${path}/${name}.json`;
+    
+    if (fs.existsSync(file_path)) {
+        fs.unlinkSync(file_path);
+        return true;
+    }
+    
+    return false;
+}
+
+export default class QJPlaylist {
     id;
     filename = '';
     /** @type {QJSong} */
@@ -49,37 +64,45 @@ class QJPlaylist {
     // Pagination
     page_size = 10;
     _current_page = 0;
+    _saved = false;
     
     constructor(id = '877017433884479569', name = 'Default') {
         this.id = id;
         this.filename = name;
     }
     
-    get pages(){
+    // -- Gets --
+    
+    get saved() {
+        return this._saved;
+    }
+    
+    get pages() {
         return Math.ceil(this.size() / this.page_size);
     }
     
-    get current_page(){
+    get current_page() {
         return this._current_page;
     }
     
-    set current_page(page){
-        this._current_page = page < this.pages ? page : this.pages-1;
-    }
-    
-    size() {
-        return this.songs.length;
+    set current_page(page) {
+        this._current_page = page < this.pages ? page : this.pages - 1;
     }
     
     get name() {
         return this.filename;
     }
     
+    // -- Sets --
     set name(name) {
         this.filename = name;
     }
     
-    save(filename = 'Default') {
+    size() {
+        return this.songs.length;
+    }
+    
+    save(filename = '') {
         if (!filename) filename = this.filename;
         this.filename = filename;
         
@@ -194,6 +217,6 @@ class QJPlaylist {
 
 
 
-module.exports.QJPlaylist = QJPlaylist;
-module.exports.load_playlist = load_playlist;
-module.exports.list_playlist = list_playlist;
+// module.exports.QJPlaylist = QJPlaylist;
+// module.exports.load_playlist = load_playlist;
+// module.exports.list_playlist = list_playlist;

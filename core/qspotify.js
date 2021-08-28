@@ -1,7 +1,10 @@
-const fetch = require("node-fetch");
-const querystring = require('querystring');
-const Youtube = require('youtube-sr').default;
-const QJSong = require("./QJSong.js");
+import fetch from "node-fetch";
+import querystring from "querystring";
+import QJSong from "./QJSong.js";
+
+import { createRequire } from "module";
+
+const require = createRequire(import.meta.url);
 
 const {spotify_client_id, spotify_client_secret, youtube_api_key} = require('./../config.json');
 
@@ -67,8 +70,16 @@ async function parse_album(data, user) {
     return infos;
 }
 
+/**
+ *
+ * @param url
+ * @param user
+ * @return {Promise<boolean|*[]>}
+ */
 async function getInfo(url, user = '') {
     let match = url.match(/https:\/\/open\.spotify\.com\/(?:playlist\/(?<playlist>[^?]+))?(?:track\/(?<track>[^?]+))?(?:artist\/(?<artist>[^?]+))?(?:album\/(?<album>[^?]+))?/);
+    
+    if (!match) return false;
     let {playlist, track, artist, album} = match.groups;
     
     let token = await get_token();
@@ -106,7 +117,7 @@ async function getInfo(url, user = '') {
                 'Authorization': 'Bearer ' + token,
             }
         }).then(r => r.json());
-    
+        
         return await parse_track(data, user);
     } else if (album !== undefined) {
         let qs = querystring.stringify({
@@ -119,12 +130,16 @@ async function getInfo(url, user = '') {
                 'Authorization': 'Bearer ' + token,
             }
         }).then(r => r.json());
-    
+        
         // return data;
         return await parse_album(data, user);
     }
 }
 
-module.exports = qspotify = {
+const qspotify = {
     'getInfo': getInfo
 }
+
+export default qspotify;
+
+// module.exports = qspotify;
