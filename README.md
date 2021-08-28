@@ -2,14 +2,14 @@
 
 Just another Discord music bot, but done the right way!
 
-![print](https://user-images.githubusercontent.com/2568375/130407637-5d3a05b0-c74a-4f0f-8f51-0a5fa965c715.png)
+![print](https://user-images.githubusercontent.com/2568375/131212271-a408d48d-9b54-4947-922a-5df22888be42.png)
 
 
 ### Features
 * [x] Create and save playlists
 * [x] Play from Youtube
 * [x] Play from Spotify
-* [ ] Queue Pagination (It is necessary to deal with the limit of 400 characters per message)
+* [x] Queue Pagination (It is necessary to deal with the limit of 400 characters per message)
 * [ ] Song Lyrics
 * [ ] Blacklist for blocking songs
 * [ ] Volume normalization
@@ -25,7 +25,7 @@ Just another Discord music bot, but done the right way!
 7. Spotify API client id and client secret
 
 ### Config
-Rename `example.config.json` to `config.json` and put you credentials.
+Create a `config.json` and put your settings.
 
 ```json
 {
@@ -47,6 +47,21 @@ npm run start
 ```
 
 ### Commands 
-|Command|Parameter|Description|
-|---|---|---|
-|play | \<url> |Plays a song|
+|Command         |Description|
+|----------------|---|
+|about           |Show about message|
+|play            |Add a song to the current queue and start playing|
+|stop            |Stops the player|
+|pause           |Pauses the player|
+|unpause         |Unpauses the player|
+|skip            |Skip to the next song|
+|shuffle         |Shuffle the queue|
+|clear           |Clears the queue|
+|loop            |Queue loop (enable or disable)|
+|notify          |Notify about when starts play a new song (enable or disable)|
+|queue           |Display the current queue and controls|
+|remove          |Remove the specified song from current queue|
+|jump            |Jump to specified song in the current queue|
+|playlist save   |Saves the current queue as playlist|
+|playlist create |Create a new playlist|
+|playlist delete |Delete a playlist|

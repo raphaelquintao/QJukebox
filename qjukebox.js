@@ -32,7 +32,7 @@ let cmds = [
     new SlashCommandBuilder().setName('about').setDescription('Show about message'),
     new SlashCommandBuilder().setName('play').setDescription('Add a song to the current queue and start playing')
         .addStringOption(option => option.setName('url').setDescription('A link for a song').setRequired(true)),
-    new SlashCommandBuilder().setName('stop').setDescription('Stops the music'),
+    new SlashCommandBuilder().setName('stop').setDescription('Stops the player'),
     new SlashCommandBuilder().setName('pause').setDescription('Pauses the player'),
     new SlashCommandBuilder().setName('unpause').setDescription('Unpauses the player'),
     new SlashCommandBuilder().setName('skip').setDescription('Skip to the next song'),
@@ -126,7 +126,6 @@ async function update_server_queue(guild) {
     if (!squeue.voice_channel) squeue.voice_channel = _voice_channel;
     if (!squeue.on_next_song) {
         squeue.on_next_song = async (a) => {
-            qprint('on next song', 'magenta');
             await squeue.qmessages_update(await show_queue(guild, false));
         }
     }
@@ -537,7 +536,8 @@ async function show_queue(guild, send = true) {
     // Playlists
     let playlist_row = (await show_playlist(guild, false)).components[0];
     
-    let saved = squeue.playlist.saved ? ' - (saved)' : ' - (unsaved)';
+    // let saved = squeue.playlist.saved ? ' - (saved)' : ' - (unsaved)';
+    let saved = '';
     
     
     
