@@ -47,7 +47,7 @@ npm run start
 ```
 
 ### Commands 
-|Command         |Description|
+|Slash Command   |Description|
 |----------------|---|
 |about           |Show about message|
 |play            |Add a song to the current queue and start playing|
