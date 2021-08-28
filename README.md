@@ -58,7 +58,7 @@ npm run start
 |shuffle         |Shuffle the queue|
 |clear           |Clears the queue|
 |loop            |Queue loop (enable or disable)|
-|notify          |Notify about when starts play a new song (enable or disable)|
+|notify          |Notifies you when it starts playing a new song (enable or disable)|
 |queue           |Display the current queue and controls|
 |remove          |Remove the specified song from current queue|
 |jump            |Jump to specified song in the current queue|
