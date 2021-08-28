@@ -20,7 +20,7 @@ Just another Discord music bot, but done the right way!
 2. `libsodium-dev`
 3. `ffmpeg`
 4. `nodejs ^16.7.0`
-5. Discord Token
+5. Discord Token an client id
 6. YouTube API key
 7. Spotify API client id and client secret
 
