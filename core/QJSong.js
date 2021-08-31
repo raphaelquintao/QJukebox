@@ -6,8 +6,8 @@ import { createAudioResource, joinVoiceChannel } from "@discordjs/voice";
 
 
 async function search_on_youtube(title, artist) {
-    let video = await YouTube.searchOne(`${title} ${artist}`, 'video').catch(err => false);
-    if (!video) video = await YouTube.searchOne(`${artist} ${title}`, 'video').catch(err => false);
+    let video = await YouTube.searchOne(`"${title} ${artist}"`, 'video').catch(err => false);
+    if (!video) video = await YouTube.searchOne(`"${artist} ${title}"`, 'video').catch(err => false);
     if (!video) video = await YouTube.searchOne(`${title}`, 'video').catch(err => false);
     
     return video;

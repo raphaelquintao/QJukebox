@@ -231,13 +231,13 @@ async function unpause(iteraction, reply = true) {
     if (!squeue.playing) {
         if (squeue.player.state.status === 'paused') {
             squeue.player.unpause();
-            return;
+            if (reply) return await iteraction.reply({content: "Unpaused"});
         }
         squeue.stoped = false;
         let song = squeue.playlist.get_current();
         if (song) await song.play(squeue, iteraction);
         else {
-            if (reply) await iteraction.reply({content: "There's no songs on queue to play!"});
+            if (reply) return await iteraction.reply({content: "There's no songs on queue to play!"});
         }
         // squeue.qmessages_update(await show_queue(iteraction.guild, false));
     }
@@ -599,7 +599,7 @@ client.on('interactionCreate', async interaction => {
             await pause(interaction);
             
         } else if (cmd === 'unpause') {
-            await unpause(interaction);
+            await unpause(interaction, true);
             
         } else if (cmd === 'skip') {
             await skip(interaction);
