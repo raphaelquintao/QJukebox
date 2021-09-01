@@ -78,7 +78,7 @@ export default class QJConfig {
             let data = fs.readFileSync(file_path, 'utf8');
             let json = JSON.parse(data.toString());
             
-            // this._default_playlist = json._default_playlist;
+            this._debug = json._debug;
             this._notify = json._notify;
             this._loop = json._loop;
         }
