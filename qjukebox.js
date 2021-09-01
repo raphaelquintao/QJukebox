@@ -44,6 +44,9 @@ let cmds = [
     new SlashCommandBuilder().setName('notify').setDescription('Toggles whether QJukebox will announce when a new song start playing')
         .addStringOption(option => option.setName('mode').setDescription('The new notify mode').setRequired(true)
             .addChoice('Enabled', 'enabled').addChoice('Disabled', 'disabled')),
+    new SlashCommandBuilder().setName('debug').setDescription('Show debug messages')
+        .addStringOption(option => option.setName('mode').setDescription('The new debug mode').setRequired(true)
+            .addChoice('Enabled', 'enabled').addChoice('Disabled', 'disabled')),
     new SlashCommandBuilder().setName('queue').setDescription('Display the current queue and controls'),
     new SlashCommandBuilder().setName('remove').setDescription('Remove the specified song from current queue')
         .addIntegerOption(option => option.setName('index').setDescription('The position of the song you want to remove').setRequired(true)),
@@ -310,6 +313,14 @@ async function notify(iteraction, mode, reply = true) {
     let squeue = queue.get(iteraction.guild.id);
     
     squeue.configs.notify = mode === 'enabled';
+    
+    if (reply) await iteraction.reply({content: `Notification has ben ${mode}`});
+}
+
+async function debug(iteraction, mode, reply = true) {
+    let squeue = queue.get(iteraction.guild.id);
+    
+    squeue.configs.debug = mode === 'enabled';
     
     if (reply) await iteraction.reply({content: `Notification has ben ${mode}`});
 }
@@ -618,6 +629,10 @@ client.on('interactionCreate', async interaction => {
             let mode = interaction.options.getString('mode');
             await notify(interaction, mode);
             
+        } else if (cmd === 'debug') {
+            let mode = interaction.options.getString('mode');
+            await debug(interaction, mode);
+    
         } else if (cmd === 'remove') {
             let index = interaction.options.getInteger('index');
             await remove(interaction, index);

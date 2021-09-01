@@ -10,8 +10,7 @@ const data_path = __dirname + "/../_data";
 export default class QJConfig {
     id;
     name;
-    playlist_selected = -1;
-    _debug = true;
+    _debug = false;
     _notify = true;
     _loop = false;
     
