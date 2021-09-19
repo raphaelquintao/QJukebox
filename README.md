@@ -8,6 +8,7 @@ Just another Discord music bot, but done the right way!
 ### Features
 * [x] Create and save playlists
 * [x] Play from Youtube
+* [x] Play from Youtube Music
 * [x] Play from Spotify
 * [x] Queue Pagination (It is necessary to deal with the limit of 400 characters per message)
 * [ ] Song Lyrics
