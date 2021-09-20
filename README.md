@@ -17,11 +17,11 @@ Just another Discord music bot, but done the right way!
 
 
 ### Requirements
-1. `ffmpeg`, `libtool` e `libsodium-dev`
+1. `ffmpeg`, `libtool` and `libsodium-dev`
    - Debian: `sudo apt-get install ffmpeg libtool libsodium-dev`
 2. `nodejs ^16.7.0`
 3. Discord Token an client id
-4. Discord OAuth2 with scope `bot` and `applications.commands` and `Administrator` permissions
+4. Discord OAuth2 with scope `bot` and `applications.commands` with `Administrator` permissions
 5. YouTube API key
 6. Spotify API client id and client secret
 
