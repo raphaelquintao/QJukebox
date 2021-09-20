@@ -2,7 +2,7 @@ import ytdl from "ytdl-core";
 import ytdld from "discord-ytdl-core";
 import { YouTube } from "youtube-sr";
 
-import { createAudioResource, joinVoiceChannel } from "@discordjs/voice";
+import { createAudioResource, joinVoiceChannel, VoiceConnectionStatus } from "@discordjs/voice";
 
 
 async function search_on_youtube(title, artist) {
@@ -88,7 +88,7 @@ export default class QJSong {
         
         if(squeue.stoped) return;
         
-        if (!squeue.voice_connection) {
+        if (!squeue.voice_connection || squeue.voice_connection.state.status === VoiceConnectionStatus.Disconnected) {
             squeue.voice_connection = await joinVoiceChannel({channelId: squeue.voice_channel.id, guildId: squeue.guild.id, adapterCreator: squeue.guild.voiceAdapterCreator});
             squeue.voice_connection.subscribe(squeue.player);
         }
@@ -101,6 +101,3 @@ export default class QJSong {
         if (notify && squeue.configs.notify) await squeue.text_channel.send({content: `Start Playing: "${this.title}"`});
     }
 }
-
-// module.exports = QJSong;
-// module.exports.load_song = load_song;

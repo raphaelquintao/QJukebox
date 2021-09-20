@@ -9,6 +9,7 @@ import QJPlaylist, { delete_playlist, list_playlist, load_playlist } from "./cor
 import { qprint } from "./core/QUtils.js";
 
 import { createRequire } from "module";
+import { generateDependencyReport } from "@discordjs/voice";
 
 const require = createRequire(import.meta.url);
 
@@ -30,6 +31,7 @@ const queue = new Map();
 
 let cmds = [
     new SlashCommandBuilder().setName('about').setDescription('Show about message'),
+    new SlashCommandBuilder().setName('leave').setDescription('Make the bot leave the channel, also stops the player'),
     new SlashCommandBuilder().setName('play').setDescription('Add a song to the current queue and start playing')
         .addStringOption(option => option.setName('url').setDescription('A link for a song').setRequired(true)),
     new SlashCommandBuilder().setName('stop').setDescription('Stops the player'),
@@ -137,7 +139,7 @@ async function update_server_queue(guild) {
 
 client.once("ready", async (ev) => {
     qprint('-> Ready!', 'lgreen', true);
-    // console.log(generateDependencyReport());
+    console.log(generateDependencyReport());
     
     for (const g of client.guilds.cache) {
         let guild = g[1];
@@ -599,6 +601,12 @@ client.on('interactionCreate', async interaction => {
         if (cmd === 'about') {
             about(interaction)
             
+        } else if (cmd === 'leave') {
+            await stop(interaction, false);
+            if (squeue.voice_connection) {
+                await squeue.voice_connection.disconnect();
+            }
+            await interaction.reply({content: `Bye!`});
         } else if (cmd === 'play') {
             let url = interaction.options.getString('url');
             await play_handler(interaction, url);

@@ -6,10 +6,10 @@ Just another Discord music bot, but done the right way!
 
 
 ### Features
-* [x] Create and save playlists
 * [x] Play from Youtube
 * [x] Play from Youtube Music
 * [x] Play from Spotify
+* [x] Create and save playlists
 * [x] Queue Pagination (It is necessary to deal with the limit of 400 characters per message)
 * [ ] Song Lyrics
 * [ ] Blacklist for blocking songs
@@ -17,16 +17,16 @@ Just another Discord music bot, but done the right way!
 
 
 ### Requirements
-1. `libtool`
-2. `libsodium-dev`
-3. `ffmpeg`
-4. `nodejs ^16.7.0`
-5. Discord Token an client id
-6. YouTube API key
-7. Spotify API client id and client secret
+1. `ffmpeg`, `libtool` e `libsodium-dev`
+   - Debian: `sudo apt-get install ffmpeg libtool libsodium-dev`
+2. `nodejs ^16.7.0`
+3. Discord Token an client id
+4. Discord OAuth2 with scope `bot` and `applications.commands` and `Administrator` permissions
+5. YouTube API key
+6. Spotify API client id and client secret
 
 ### Config
-Create a `config.json` and put your settings.
+Create a `config.json` or just rename the `example.config.json` and put your settings.
 
 ```json
 {
@@ -51,6 +51,7 @@ npm run start
 |Slash Command   |Description|
 |----------------|---|
 |about           |Show about message|
+|leave           |Make the bot leave the channel, also stops the player|
 |play            |Add a song to the current queue and start playing|
 |stop            |Stops the player|
 |pause           |Pauses the player|
@@ -66,3 +67,4 @@ npm run start
 |playlist save   |Saves the current queue as playlist|
 |playlist create |Create a new playlist|
 |playlist delete |Delete a playlist|
+|debug           |Show debug messages (enable or disable)|
